@@ -1,2 +1,2 @@
 # bfb-contract
-a contract for tron of bfb
+a BFB contract on tron block chain network
