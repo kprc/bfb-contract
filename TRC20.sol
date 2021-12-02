@@ -72,10 +72,8 @@ contract TRC20 is ITRC20 {
                 toBurn = _totalSupply.sub(_stopBurn);
             }
             _burn(msg.sender,toBurn);
-            _transfer(msg.sender, recipient, amount.sub(toBurn));
-        }else{
-            _transfer(msg.sender, recipient, amount);
         }
+        _transfer(msg.sender, recipient, amount);
 
         return true;
     }
@@ -112,18 +110,17 @@ contract TRC20 is ITRC20 {
      * `amount`.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+        uint256 memory toBurn = 0;
         if (_totalSupply > _stopBurn){
             toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
             if (_totalSupply.sub(toBurn) < _stopBurn){
                 toBurn = _totalSupply.sub(_stopBurn);
             }
             _burn(sender,toBurn);
-            _transfer(sender, recipient, amount.sub(toBurn));
-        }else{
-            _transfer(msg.sender, recipient, amount);
         }
+        _transfer(sender, recipient, amount);
 
-        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount.add(toBurn)));
         return true;
     }
 
