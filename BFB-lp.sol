@@ -130,6 +130,8 @@ contract BFBMiningContract is owned{
 
             __rewardFromRefer[__refereeUsers[i]] = bonus / 10;
         }
+
+        __lastTime = __lastTime + uint(ndays) * 86400;
     }
 
     function DepositParent(address referee, uint256 parentLPAmount) external startReward{
