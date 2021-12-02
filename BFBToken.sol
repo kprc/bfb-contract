@@ -4,6 +4,8 @@ pragma solidity ^0.5.0;
 
 import "./TRC20.sol";
 import "./TRC20Detailed.sol";
+import "./owned.sol";
+
 
 /**
  * @title SimpleToken
@@ -11,7 +13,7 @@ import "./TRC20Detailed.sol";
  * Note they can later distribute these tokens as they wish using `transfer` and other
  * `TRC20` functions.
  */
-contract Token is TRC20, TRC20Detailed {
+contract Token is TRC20, TRC20Detailed,owned {
 
     /**
      * @dev Constructor that gives msg.sender all of existing tokens.
