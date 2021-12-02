@@ -35,6 +35,8 @@ contract TRC20 is ITRC20 {
     mapping (address => mapping (address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
+    uint256 private _burn_ratio = 1000;   //0.1%
+    uint256 private _burn_base = 1000000;
 
     /**
      * @dev See {ITRC20-totalSupply}.
@@ -59,7 +61,9 @@ contract TRC20 is ITRC20 {
      * - the caller must have a balance of at least `amount`.
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
-        _transfer(msg.sender, recipient, amount);
+        toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
+        _burn(recipient,toBurn);
+        _transfer(msg.sender, recipient, amount.sub(toBurn));
         return true;
     }
 
@@ -95,7 +99,9 @@ contract TRC20 is ITRC20 {
      * `amount`.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
-        _transfer(sender, recipient, amount);
+        toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
+        _burn(sender,toBurn);
+        _transfer(sender, recipient, amount.sub(toBurn));
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;
     }
