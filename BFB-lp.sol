@@ -1,14 +1,36 @@
 
-
 pragma solidity >=0.5.11;
 
 import "./owned.sol";
-import "./safemath.sol";
-import "./ninja-token.sol";
-
+import "./Safemath.sol";
+import "./ITRC20.sol";
 
 contract BFBMiningContract is owned{
     using SafeMath for uint256;
+
+    ITRC20 public __bfbToken;
+    uint256 public __bfbReward;
+    uint256 public __parentReward;   //
+    ITRC20 public __parentLpToken;
+    ITRC20 public __bfbLpToken;
+
+    mapping(address=>uint256) public __beeLPToken;
+    uint256 public __totalParentLPToken;
+    mapping(address=>uint256) public __bfbLPToken;
+    uint256 public __totalBfbLPToken;
+
+
+    constructor (address parentlpToken, address bfbToken,address bfblpToken) public{
+        __parentLpToken = ITRC20(parentlpToken);
+        __bfbToken = ITRC20(bfbToken);
+        __bfbLpToken = ITRC20(bfblpToken);
+    }
+
+    function DepositBeeLPReward(uint256 amount) public onlyOwner {
+        __beeToken.transfer(this,amount);
+//        __beeLpToken = amount;
+    }
+}
 
 //    NinjaToken public token;
 //    address public ninjaAddr;
@@ -215,4 +237,3 @@ contract BFBMiningContract is owned{
 //        return (v, r, s);
 //    }
 
-}
