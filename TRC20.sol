@@ -46,6 +46,10 @@ contract TRC20 is ITRC20 {
         return _totalSupply;
     }
 
+    function burnParam() public view returns(uint256,uint256,uint256){
+        return (_stopBurn,_burn_ratio,_burn_base);
+    }
+
     /**
      * @dev See {ITRC20-balanceOf}.
      */
@@ -191,12 +195,13 @@ contract TRC20 is ITRC20 {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount, uint256 stopBurn) internal {
+    function _mint(address account, uint256 amount, uint256 stopBurn,uint256 burn_ratio) internal {
         require(account != address(0), "TRC20: mint to the zero address");
 
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
         _stopBurn = stopBurn;
+        _burn_ratio = burn_ratio;
         emit Transfer(address(0), account, amount);
     }
 
