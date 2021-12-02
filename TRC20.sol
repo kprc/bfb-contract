@@ -37,6 +37,7 @@ contract TRC20 is ITRC20 {
     uint256 private _totalSupply;
     uint256 private _burn_ratio = 1000;   //0.1%
     uint256 private _burn_base = 1000000;
+    uint256 private _stopBurn;
 
     /**
      * @dev See {ITRC20-totalSupply}.
@@ -61,9 +62,17 @@ contract TRC20 is ITRC20 {
      * - the caller must have a balance of at least `amount`.
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
-        toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
-        _burn(recipient,toBurn);
-        _transfer(msg.sender, recipient, amount.sub(toBurn));
+        if (_totalSupply > _stopBurn){
+            toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
+            if (_totalSupply.sub(toBurn) < _stopBurn){
+                toBurn = _totalSupply.sub(_stopBurn);
+            }
+            _burn(msg.sender,toBurn);
+            _transfer(msg.sender, recipient, amount.sub(toBurn));
+        }else{
+            _transfer(msg.sender, recipient, amount);
+        }
+
         return true;
     }
 
@@ -99,9 +108,17 @@ contract TRC20 is ITRC20 {
      * `amount`.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
-        toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
-        _burn(sender,toBurn);
-        _transfer(sender, recipient, amount.sub(toBurn));
+        if (_totalSupply > _stopBurn){
+            toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
+            if (_totalSupply.sub(toBurn) < _stopBurn){
+                toBurn = _totalSupply.sub(_stopBurn);
+            }
+            _burn(sender,toBurn);
+            _transfer(sender, recipient, amount.sub(toBurn));
+        }else{
+            _transfer(msg.sender, recipient, amount);
+        }
+
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;
     }
@@ -174,11 +191,12 @@ contract TRC20 is ITRC20 {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount) internal {
+    function _mint(address account, uint256 amount, uint256 stopBurn) internal {
         require(account != address(0), "TRC20: mint to the zero address");
 
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
+        _stopBurn = stopBurn;
         emit Transfer(address(0), account, amount);
     }
 
