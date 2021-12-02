@@ -13,7 +13,7 @@ import "./owned.sol";
  * Note they can later distribute these tokens as they wish using `transfer` and other
  * `TRC20` functions.
  */
-contract Token is TRC20, TRC20Detailed,owned {
+contract BFBToken is TRC20, TRC20Detailed,owned {
 
     /**
      * @dev Constructor that gives msg.sender all of existing tokens.
