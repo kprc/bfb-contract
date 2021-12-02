@@ -9,16 +9,31 @@ contract BFBMiningContract is owned{
     using SafeMath for uint256;
 
     ITRC20 public __bfbToken;
-    uint256 public __bfbReward;
-    uint256 public __parentReward;   //
+    uint256 public __bfbReward = 68000*(10**18);        //68000
+    uint256 public __parentReward = 100000*(10**18);   //100000
+    uint256 public __parentLeft = __parentReward;
+    uint256 public __bfbLeft = __bfbReward;
     ITRC20 public __parentLpToken;
     ITRC20 public __bfbLpToken;
 
-    mapping(address=>uint256) public __beeLPToken;
+    uint public __startReward = false;
+    uint public __beginTime;
+    uint public __bfbWithdrawPause = false;
+    uint public __parentWithdrawPause = false;
+    uint public __lastTime;
+
+    mapping(address=>uint256) public __parentLPToken;
+    address[] public __parentLPUsers;
     uint256 public __totalParentLPToken;
     mapping(address=>uint256) public __bfbLPToken;
+    address[] public __bfbLPUsers;
     uint256 public __totalBfbLPToken;
 
+    mapping(address=>uint256) public __rewardFromParent;
+    mapping(address=>uint256) public __rewardFromBfb;
+    mapping(address=>uint256) public __rewardFromRefer;
+
+    mapping(address=>address[]) public __referee;
 
     constructor (address parentlpToken, address bfbToken,address bfblpToken) public{
         __parentLpToken = ITRC20(parentlpToken);
@@ -26,10 +41,89 @@ contract BFBMiningContract is owned{
         __bfbLpToken = ITRC20(bfblpToken);
     }
 
-    function DepositBeeLPReward(uint256 amount) public onlyOwner {
-        __beeToken.transfer(this,amount);
-//        __beeLpToken = amount;
+    modifier startReward {
+        require(__startReward == true,"reward have not begin");
+        _;
     }
+
+    modifier parentWithdraw{
+        require(__parentWithdrawPause==true,"wait to withdraw...");
+        _;
+    }
+
+    modifier bfbWithdraw{
+        require(__bfbWithdrawPause==true,"wait to withdraw...");
+        _;
+    }
+
+    function setStartReward(bool switch) external onlyOwner{
+        __startReward = switch;
+    }
+
+    function setStartTime(uint beginTime) external onlyOwner{
+        if (beginTime == 0){
+            beginTime = block.timestamp;
+        }
+        __beginTime = beginTime;
+        __lastTime = beginTime;
+    }
+
+    function setParentWithdraw(bool flag) external onlyOwner{
+        __parentWithdrawPause = flag;
+    }
+
+    function setBfbWithdraw(bool flag) external onlyOwner{
+        __bfbWithdrawPause = flag;
+    }
+
+    function _addReferee(address referee, address user) internal {
+        if (referee == address(0)){
+            return;
+        }
+
+        address[] memory list = __referee[referee];
+        bool memory found = false;
+        for(uint256 i = 0; i<list.length; i++){
+            if (list[i] == user){
+                found = true;
+                break;
+            }
+        }
+        if (found == false){
+            __referee[referee] = list.push(user);
+        }
+    }
+
+    function _reward() internal {
+        uint memory nowTime = block.timestamp;
+        if ( (nowTime - __lastTime) < 86400){
+            return;
+        }
+
+        uint memory ndays = (nowTime - __lastTime) / 86400;
+        uint256 memory pr = (__parentReward/uint256(180)) * uint256(ndays);
+        uint256 memory br = (__bfbReward/uint256(180))*uint256(ndays);
+
+        for(uint256 i=0;i<__parentLPUsers.length;i++){
+            __rewardFromParent[__parentLPUsers[i]] = __rewardFromParent[__parentLPUsers[i]] + pr * __parentLPToken[__parentLPUsers[i]] / __totalParentLPToken;
+        }
+
+        for (uint256 i=0;i<__bfbLPUsers.length;i++){
+            __rewardFromBfb[__bfbLPUsers[i]] = __rewardFromBfb[__bfbLPUsers[i]] + br * __bfbLPToken[__bfbLPUsers[i]] / __totalBfbLPToken;
+        }
+
+        
+
+    }
+
+    function DepositParent(address referee, uint256 parentLPAmount) external startReward{
+        require(__parentLpToken.balanceOf(msg.sender) >= parentLPAmount,"not enough lp token");
+        _reward();
+        _addReferee(referee, msg.sender);
+
+    }
+
+
 }
 
 //    NinjaToken public token;
