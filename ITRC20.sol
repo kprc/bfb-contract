@@ -10,6 +10,8 @@ interface ITRC20 {
      */
     function totalSupply() external view returns (uint256);
 
+    function burnParam() public view returns(uint256,uint256,uint256);
+
     /**
      * @dev Returns the amount of tokens owned by `account`.
      */
