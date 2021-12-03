@@ -241,8 +241,27 @@ contract BFBMiningContract is owned{
         uint256 memory pr = (__parentReward/uint256(180)) * uint256(ndays);
         uint256 memory br = (__bfbReward/uint256(180))*uint256(ndays);
 
-        
+        address[] memory list = __bfbReferee[msg.sender];
+        uint256 memory bfBbonus = 0;
+        for(uint256 j=0;j<list.length;j++){
+            bfBbonus += (pr *__bfbLPToken[j]/__totalBfbLPToken)/10;
+        }
+        bfBbonus = __rewardFromBfbRefer[msg.sender] + bfBbonus;
 
+        list = __parentReferee[msg.sender];
+        uint256 memory pBonus = 0;
+        for(uint256 j=0;j<list.length;j++){
+            pBonus += (pr *__parentLPToken[list[j]]/__totalParentLPToken)/10;
+        }
+
+        pBonus = __rewardFromParentRefer[msg.sender] + pBonus;
+
+        return (__parentLPToken[msg.sender],
+                __bfbLPToken[msg.sender],
+                __rewardFromParent[msg.sender] + pr * __parentLPToken[msg.sender] / __totalParentLPToken,
+                __rewardFromBfb[msg.sender] + br * __bfbLPToken[msg.sender] / __totalBfbLPToken,
+                pBonus,
+                bfBbonus);
     }
 
 }
