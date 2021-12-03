@@ -29,10 +29,14 @@ contract BFBMiningContract is owned{
 
     mapping(address=>uint256) public __rewardFromParent;
     mapping(address=>uint256) public __rewardFromBfb;
-    mapping(address=>uint256) public __rewardFromRefer;
+    mapping(address=>uint256) public __rewardFromParentRefer;
+    mapping(address=>uint256) public __rewardFromBfbRefer;
 
-    mapping(address=>address[]) public __referee;
-    address[] public __refereeUsers;
+    mapping(address=>address[]) public __parentReferee;
+    address[] public __parentRefereeUsers;
+
+    mapping(address=>address[]) public __bfbReferee;
+    address[] public __bfbRefereeUsers;
 
     event ev_depositParent(address user,address referee, uint256 amount);
     event ev_depositBFB(address user,address referee, uint256 amount);
@@ -77,12 +81,12 @@ contract BFBMiningContract is owned{
         __bfbWithdrawPause = flag;
     }
 
-    function _addReferee(address referee, address user) internal {
+    function _addParentReferee(address referee, address user) internal {
         if (referee == address(0)){
             return;
         }
 
-        address[] memory list = __referee[referee];
+        address[] memory list = __parentReferee[referee];
         bool memory found = false;
         for(uint256 i = 0; i<list.length; i++){
             if (list[i] == user){
@@ -91,15 +95,40 @@ contract BFBMiningContract is owned{
             }
         }
         if (found == false){
-            __referee[referee] = list.push(user);
+            __parentReferee[referee] = list.push(user);
         }
 
-        for(uint256 i = 0;i<__refereeUsers.length;i++){
-            if (referee == __refereeUsers[i]){
+        for(uint256 i = 0;i<__parentRefereeUsers.length;i++){
+            if (referee == __parentRefereeUsers[i]){
                 return;
             }
         }
-        __refereeUsers.push(referee);
+        __parentRefereeUsers.push(referee);
+    }
+
+    function _addBfbReferee(address referee, address user) internal {
+        if (referee == address(0)){
+            return;
+        }
+
+        address[] memory list = __bfbReferee[referee];
+        bool memory found = false;
+        for(uint256 i = 0; i<list.length; i++){
+            if (list[i] == user){
+                found = true;
+                break;
+            }
+        }
+        if (found == false){
+            __bfbReferee[referee] = list.push(user);
+        }
+
+        for(uint256 i = 0;i<__bfbRefereeUsers.length;i++){
+            if (referee == __bfbRefereeUsers[i]){
+                return;
+            }
+        }
+        __bfbRefereeUsers.push(referee);
     }
 
     function _reward() internal {
@@ -112,6 +141,24 @@ contract BFBMiningContract is owned{
         uint256 memory pr = (__parentReward/uint256(180)) * uint256(ndays);
         uint256 memory br = (__bfbReward/uint256(180))*uint256(ndays);
 
+        for (uint256 i=0;i<__parentRefereeUsers.length;i++){
+            address[] memory list = __parentReferee[__parentRefereeUsers[i]];
+            uint256 memory bonus = 0;
+            for(uint256 j=0;j<list.length;j++){
+                bonus += (pr *__parentLPToken[list[j]]/__totalParentLPToken)/10;
+            }
+            __rewardFromParentRefer[__parentRefereeUsers[i]] += bonus;
+        }
+
+        for (uint256 i=0;i<__bfbRefereeUsers.length;i++){
+            address[] memory list = __bfbReferee[__bfbRefereeUsers[i]];
+            uint256 memory bonus = 0;
+            for(uint256 j=0;j<list.length;j++){
+                bonus += (pr *__bfbLPToken[list[j]]/__totalBfbLPToken)/10;
+            }
+            __rewardFromBfbRefer[__bfbRefereeUsers[i]] += bonus;
+        }
+
         for(uint256 i=0;i<__parentLPUsers.length;i++){
             __rewardFromParent[__parentLPUsers[i]] = __rewardFromParent[__parentLPUsers[i]] + pr * __parentLPToken[__parentLPUsers[i]] / __totalParentLPToken;
         }
@@ -120,24 +167,13 @@ contract BFBMiningContract is owned{
             __rewardFromBfb[__bfbLPUsers[i]] = __rewardFromBfb[__bfbLPUsers[i]] + br * __bfbLPToken[__bfbLPUsers[i]] / __totalBfbLPToken;
         }
 
-        for(uint256 i=0;i<__refereeUsers.length;i++){
-            address[] memory list = __referee[referee];
-            uint256 memory bonus = 0;
-            for(uint256 i = 0; i<list.length; i++){
-                bonus += __rewardFromBfb[list[i]];
-                bonus += __rewardFromParent[list[i]];
-            }
-
-            __rewardFromRefer[__refereeUsers[i]] = bonus / 10;
-        }
-
         __lastTime = __lastTime + uint(ndays) * 86400;
     }
 
     function DepositParent(address referee, uint256 parentLPAmount) external startReward{
         require(__pLpToken.balanceOf(msg.sender) >= parentLPAmount,"not enough lp token");
         _reward();
-        _addReferee(referee, msg.sender);
+        _addParentReferee(referee, msg.sender);
 
         __pLpToken.transfer(address(this),parentLPAmount);
 
@@ -153,7 +189,7 @@ contract BFBMiningContract is owned{
     function DepositBFB(address referee, uint256 bfbAmount) external startReward{
         require(__bLpToken.balanceOf(msg.sender)>=bfbAmount, "token not enough");
         _reward();
-        _addReferee(referee,msg.sender);
+        _addBfbReferee(referee,msg.sender);
 
         __bLpToken.transfer(_address(this), bfbAmount);
 
@@ -167,6 +203,7 @@ contract BFBMiningContract is owned{
         ev_depositBFB(msg.sender, referee, bfbAmount);
     }
 
+    function Withdraw() external
 
 }
 
