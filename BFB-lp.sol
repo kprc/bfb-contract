@@ -40,6 +40,9 @@ contract BFBMiningContract is owned{
 
     event ev_depositParent(address user,address referee, uint256 amount);
     event ev_depositBFB(address user,address referee, uint256 amount);
+    event ev_withdrawParent(address user, uint256 parentLPTokenAmount, uint256 bfbTokenAmount);
+    event ev_withdrawBfb(address user, uint256 bfgLPTokenAmount, uint256 bfbTokenAmount);
+
     constructor (address parentlpToken, address bfbToken,address bfblpToken) public{
         __pLpToken = ITRC20(parentlpToken);
         __bfbToken = ITRC20(bfbToken);
@@ -203,7 +206,44 @@ contract BFBMiningContract is owned{
         ev_depositBFB(msg.sender, referee, bfbAmount);
     }
 
-    function Withdraw() external
+    function WithdrawParent() external parentWithdraw{
+        _reward();
+        //transfer parent token
+        __pLpToken.transfer(msg.sender,__parentLPToken[msg.sender]);
+        uint256 memory plptoken = __parentLPToken[msg.sender];
+        __totalParentLPToken -= __parentLPToken[msg.sender];
+        __parentLPToken[msg.sender] = 0;
+        //transfer bfb token
+        uint256 memory bfbt = __rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender];
+        __bLpToken.transfer(msg.sender,__rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender]);
+        __rewardFromParent[msg.sender] = 0;
+        __rewardFromParentRefer[msg.sender] = 0;
+        ev_withdrawParent(msg.sender,plptoken, bfbt);
+    }
+
+    function WithdrawBFB() external bfbWithdraw{
+        _reward();
+        __bLpToken.transfer(msg.sender,__bfbLPToken[msg.sender]);
+        uint256 memory blptoken = __bfbLPToken[msg.sender];
+        __totalBfbLPToken -= __bfbLPToken[msg.sender];
+        __bfbLPToken[msg.sender] = 0;
+        //transfer bfb token
+        uint256 memory bfbt = __rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender];
+        __bLpToken.transfer(msg.sender,__rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender]);
+
+        __rewardFromBfb[msg.sender] = 0;
+        __rewardFromBfbRefer[msg.sender] = 0;
+        ev_withdrawBfb(msg.sender,blptoken, bfbt);
+    }
+
+    function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
+        uint memory ndays = (nowTime - __lastTime) / 86400;
+        uint256 memory pr = (__parentReward/uint256(180)) * uint256(ndays);
+        uint256 memory br = (__bfbReward/uint256(180))*uint256(ndays);
+
+        
+
+    }
 
 }
 
