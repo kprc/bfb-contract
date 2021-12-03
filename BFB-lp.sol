@@ -136,7 +136,7 @@ contract BFBMiningContract is owned{
 
     function _reward() internal {
         uint nowTime = block.timestamp;
-        if ( (nowTime - __lastTime) < 86400){
+        if ( (nowTime <= __lastTime) || ((nowTime - __lastTime) < 86400)){
             return;
         }
 
@@ -178,11 +178,22 @@ contract BFBMiningContract is owned{
         _reward();
         _addParentReferee(referee, msg.sender);
 
-        __pLpToken.transfer(address(this),parentLPAmount);
+        __pLpToken.transferFrom(msg.sender,address(this),parentLPAmount);
 
-        if(__parentLPToken[msg.sender] == 0){
+//        if(__parentLPToken[msg.sender] == 0){
+//            __parentLPUsers.push(msg.sender);
+//        }
+        bool found = false;
+        for (uint256 i=0;i<__parentLPUsers.length;i++){
+            if (__parentLPUsers[i] == msg.sender){
+                found = true;
+                break;
+            }
+        }
+        if (found == false){
             __parentLPUsers.push(msg.sender);
         }
+
         __parentLPToken[msg.sender] = __parentLPToken[msg.sender] + parentLPAmount;
         __totalParentLPToken += parentLPAmount;
 
@@ -194,9 +205,16 @@ contract BFBMiningContract is owned{
         _reward();
         _addBfbReferee(referee,msg.sender);
 
-        __bLpToken.transfer(address(this), bfbAmount);
+        __bLpToken.transferFrom(msg.sender,address(this), bfbAmount);
 
-        if (__bfbLPToken[msg.sender] == 0){
+        bool found = false;
+        for (uint256 i=0;i<__bfbLPUsers.length;i++){
+            if (__bfbLPUsers[i] == msg.sender){
+                found = true;
+                break;
+            }
+        }
+        if (found == false){
             __bfbLPUsers.push(msg.sender);
         }
 
@@ -238,7 +256,13 @@ contract BFBMiningContract is owned{
 
     function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
         uint nowTime = block.timestamp;
-        uint  ndays = (nowTime - __lastTime) / 86400;
+        uint ndays;
+        if (nowTime <= __lastTime){
+            ndays = 0;
+        }else{
+            ndays = (nowTime - __lastTime) / 86400;
+        }
+
         uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
         uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
 
