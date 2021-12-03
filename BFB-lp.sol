@@ -1,8 +1,8 @@
 
 pragma solidity >=0.5.11;
 
-import "./owned.sol";
-import "./Safemath.sol";
+import "./owner.sol";
+import "./SafeMath.sol";
 import "./ITRC20.sol";
 
 contract BFBMiningContract is owned{
@@ -14,10 +14,10 @@ contract BFBMiningContract is owned{
     ITRC20 public __pLpToken;
     ITRC20 public __bLpToken;
 
-    uint public __startReward = false;
+    bool public __startReward = false;
     uint public __beginTime;
-    uint public __bfbWithdrawPause = false;
-    uint public __parentWithdrawPause = false;
+    bool public __bfbWithdrawPause = false;
+    bool public __parentWithdrawPause = false;
     uint public __lastTime;
 
     mapping(address=>uint256) public __parentLPToken;
@@ -64,8 +64,8 @@ contract BFBMiningContract is owned{
         _;
     }
 
-    function setStartReward(bool switch) external onlyOwner{
-        __startReward = switch;
+    function setStartReward(bool sw) external onlyOwner{
+        __startReward = sw;
     }
 
     function setStartTime(uint beginTime) external onlyOwner{
@@ -90,7 +90,7 @@ contract BFBMiningContract is owned{
         }
 
         address[] memory list = __parentReferee[referee];
-        bool memory found = false;
+        bool found = false;
         for(uint256 i = 0; i<list.length; i++){
             if (list[i] == user){
                 found = true;
@@ -98,7 +98,7 @@ contract BFBMiningContract is owned{
             }
         }
         if (found == false){
-            __parentReferee[referee] = list.push(user);
+            __parentReferee[referee].push(user);
         }
 
         for(uint256 i = 0;i<__parentRefereeUsers.length;i++){
@@ -115,7 +115,7 @@ contract BFBMiningContract is owned{
         }
 
         address[] memory list = __bfbReferee[referee];
-        bool memory found = false;
+        bool found = false;
         for(uint256 i = 0; i<list.length; i++){
             if (list[i] == user){
                 found = true;
@@ -123,7 +123,7 @@ contract BFBMiningContract is owned{
             }
         }
         if (found == false){
-            __bfbReferee[referee] = list.push(user);
+            __bfbReferee[referee].push(user);
         }
 
         for(uint256 i = 0;i<__bfbRefereeUsers.length;i++){
@@ -135,18 +135,18 @@ contract BFBMiningContract is owned{
     }
 
     function _reward() internal {
-        uint memory nowTime = block.timestamp;
+        uint nowTime = block.timestamp;
         if ( (nowTime - __lastTime) < 86400){
             return;
         }
 
-        uint memory ndays = (nowTime - __lastTime) / 86400;
-        uint256 memory pr = (__parentReward/uint256(180)) * uint256(ndays);
-        uint256 memory br = (__bfbReward/uint256(180))*uint256(ndays);
+        uint  ndays = (nowTime - __lastTime) / 86400;
+        uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
+        uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
 
         for (uint256 i=0;i<__parentRefereeUsers.length;i++){
             address[] memory list = __parentReferee[__parentRefereeUsers[i]];
-            uint256 memory bonus = 0;
+            uint256 bonus = 0;
             for(uint256 j=0;j<list.length;j++){
                 bonus += (pr *__parentLPToken[list[j]]/__totalParentLPToken)/10;
             }
@@ -155,7 +155,7 @@ contract BFBMiningContract is owned{
 
         for (uint256 i=0;i<__bfbRefereeUsers.length;i++){
             address[] memory list = __bfbReferee[__bfbRefereeUsers[i]];
-            uint256 memory bonus = 0;
+            uint256 bonus = 0;
             for(uint256 j=0;j<list.length;j++){
                 bonus += (pr *__bfbLPToken[list[j]]/__totalBfbLPToken)/10;
             }
@@ -186,7 +186,7 @@ contract BFBMiningContract is owned{
         __parentLPToken[msg.sender] = __parentLPToken[msg.sender] + parentLPAmount;
         __totalParentLPToken += parentLPAmount;
 
-        ev_depositParent(msg.sender, referee, parentLPAmount);
+        emit ev_depositParent(msg.sender, referee, parentLPAmount);
     }
 
     function DepositBFB(address referee, uint256 bfbAmount) external startReward{
@@ -194,7 +194,7 @@ contract BFBMiningContract is owned{
         _reward();
         _addBfbReferee(referee,msg.sender);
 
-        __bLpToken.transfer(_address(this), bfbAmount);
+        __bLpToken.transfer(address(this), bfbAmount);
 
         if (__bfbLPToken[msg.sender] == 0){
             __bfbLPUsers.push(msg.sender);
@@ -203,53 +203,54 @@ contract BFBMiningContract is owned{
         __bfbLPToken[msg.sender] = __bfbLPToken[msg.sender] + bfbAmount;
         __totalBfbLPToken += bfbAmount;
 
-        ev_depositBFB(msg.sender, referee, bfbAmount);
+        emit ev_depositBFB(msg.sender, referee, bfbAmount);
     }
 
     function WithdrawParent() external parentWithdraw{
         _reward();
         //transfer parent token
         __pLpToken.transfer(msg.sender,__parentLPToken[msg.sender]);
-        uint256 memory plptoken = __parentLPToken[msg.sender];
+        uint256 plptoken = __parentLPToken[msg.sender];
         __totalParentLPToken -= __parentLPToken[msg.sender];
         __parentLPToken[msg.sender] = 0;
         //transfer bfb token
-        uint256 memory bfbt = __rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender];
+        uint256 bfbt = __rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender];
         __bLpToken.transfer(msg.sender,__rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender]);
         __rewardFromParent[msg.sender] = 0;
         __rewardFromParentRefer[msg.sender] = 0;
-        ev_withdrawParent(msg.sender,plptoken, bfbt);
+        emit ev_withdrawParent(msg.sender,plptoken, bfbt);
     }
 
     function WithdrawBFB() external bfbWithdraw{
         _reward();
         __bLpToken.transfer(msg.sender,__bfbLPToken[msg.sender]);
-        uint256 memory blptoken = __bfbLPToken[msg.sender];
+        uint256 blptoken = __bfbLPToken[msg.sender];
         __totalBfbLPToken -= __bfbLPToken[msg.sender];
         __bfbLPToken[msg.sender] = 0;
         //transfer bfb token
-        uint256 memory bfbt = __rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender];
+        uint256 bfbt = __rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender];
         __bLpToken.transfer(msg.sender,__rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender]);
 
         __rewardFromBfb[msg.sender] = 0;
         __rewardFromBfbRefer[msg.sender] = 0;
-        ev_withdrawBfb(msg.sender,blptoken, bfbt);
+        emit ev_withdrawBfb(msg.sender,blptoken, bfbt);
     }
 
     function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
-        uint memory ndays = (nowTime - __lastTime) / 86400;
-        uint256 memory pr = (__parentReward/uint256(180)) * uint256(ndays);
-        uint256 memory br = (__bfbReward/uint256(180))*uint256(ndays);
+        uint nowTime = block.timestamp;
+        uint  ndays = (nowTime - __lastTime) / 86400;
+        uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
+        uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
 
         address[] memory list = __bfbReferee[msg.sender];
-        uint256 memory bfBbonus = 0;
+        uint256  bfBbonus = 0;
         for(uint256 j=0;j<list.length;j++){
-            bfBbonus += (pr *__bfbLPToken[j]/__totalBfbLPToken)/10;
+            bfBbonus += (pr *__bfbLPToken[list[j]]/__totalBfbLPToken)/10;
         }
         bfBbonus = __rewardFromBfbRefer[msg.sender] + bfBbonus;
 
         list = __parentReferee[msg.sender];
-        uint256 memory pBonus = 0;
+        uint256 pBonus = 0;
         for(uint256 j=0;j<list.length;j++){
             pBonus += (pr *__parentLPToken[list[j]]/__totalParentLPToken)/10;
         }
@@ -257,11 +258,11 @@ contract BFBMiningContract is owned{
         pBonus = __rewardFromParentRefer[msg.sender] + pBonus;
 
         return (__parentLPToken[msg.sender],
-                __bfbLPToken[msg.sender],
-                __rewardFromParent[msg.sender] + pr * __parentLPToken[msg.sender] / __totalParentLPToken,
-                __rewardFromBfb[msg.sender] + br * __bfbLPToken[msg.sender] / __totalBfbLPToken,
-                pBonus,
-                bfBbonus);
+        __bfbLPToken[msg.sender],
+        __rewardFromParent[msg.sender] + pr * __parentLPToken[msg.sender] / __totalParentLPToken,
+        __rewardFromBfb[msg.sender] + br * __bfbLPToken[msg.sender] / __totalBfbLPToken,
+        pBonus,
+        bfBbonus);
     }
 
 }
