@@ -180,9 +180,6 @@ contract BFBMiningContract is owned{
 
         __pLpToken.transferFrom(msg.sender,address(this),parentLPAmount);
 
-//        if(__parentLPToken[msg.sender] == 0){
-//            __parentLPUsers.push(msg.sender);
-//        }
         bool found = false;
         for (uint256 i=0;i<__parentLPUsers.length;i++){
             if (__parentLPUsers[i] == msg.sender){
