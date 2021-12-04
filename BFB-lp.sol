@@ -8,6 +8,9 @@ import "./ITRC20.sol";
 contract BFBMiningContract is owned{
     using SafeMath for uint256;
 
+    uint private __onedaySeconds=60;
+    // uint private __onedaySeconds=86400;
+
     ITRC20 public __bfbToken;
     uint256 public __bfbReward = 68000*(10**18);        //68000
     uint256 public __parentReward = 100000*(10**18);   //100000
@@ -32,10 +35,15 @@ contract BFBMiningContract is owned{
     mapping(address=>uint256) public __rewardFromParentRefer;
     mapping(address=>uint256) public __rewardFromBfbRefer;
 
-    mapping(address=>address[]) public __parentReferee;
+    struct TAddressList {
+        uint exists ;
+        address[] addrs;
+    }
+
+    mapping(address=>TAddressList) public __parentReferee;
     address[] public __parentRefereeUsers;
 
-    mapping(address=>address[]) public __bfbReferee;
+    mapping(address=>TAddressList) public __bfbReferee;
     address[] public __bfbRefereeUsers;
 
     event ev_depositParent(address user,address referee, uint256 amount);
@@ -89,16 +97,19 @@ contract BFBMiningContract is owned{
             return;
         }
 
-        address[] memory list = __parentReferee[referee];
+        TAddressList memory list = __parentReferee[referee];
         bool found = false;
-        for(uint256 i = 0; i<list.length; i++){
-            if (list[i] == user){
-                found = true;
-                break;
+        if (list.exists > 0){
+            for(uint256 i = 0; i<list.addrs.length; i++){
+                if (list.addrs[i] == user){
+                    found = true;
+                    break;
+                }
             }
         }
         if (found == false){
-            __parentReferee[referee].push(user);
+            __parentReferee[referee].addrs.push(user);
+            __parentReferee[referee].exists += 1;
         }
 
         for(uint256 i = 0;i<__parentRefereeUsers.length;i++){
@@ -114,16 +125,20 @@ contract BFBMiningContract is owned{
             return;
         }
 
-        address[] memory list = __bfbReferee[referee];
+        TAddressList memory list = __bfbReferee[referee];
         bool found = false;
-        for(uint256 i = 0; i<list.length; i++){
-            if (list[i] == user){
-                found = true;
-                break;
+        if(list.exists>0){
+            for(uint256 i = 0; i<list.addrs.length; i++){
+                if (list.addrs[i] == user){
+                    found = true;
+                    break;
+                }
             }
         }
+
         if (found == false){
-            __bfbReferee[referee].push(user);
+            __bfbReferee[referee].addrs.push(user);
+            __bfbReferee[referee].exists += 1;
         }
 
         for(uint256 i = 0;i<__bfbRefereeUsers.length;i++){
@@ -136,28 +151,33 @@ contract BFBMiningContract is owned{
 
     function _reward() internal {
         uint nowTime = block.timestamp;
-        if ( (nowTime <= __lastTime) || ((nowTime - __lastTime) < 86400)){
+        if ( (nowTime <= __lastTime) || ((nowTime - __lastTime) < __onedaySeconds)){
             return;
         }
 
-        uint  ndays = (nowTime - __lastTime) / 86400;
+        uint  ndays = (nowTime - __lastTime) / __onedaySeconds;
         uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
         uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
 
         for (uint256 i=0;i<__parentRefereeUsers.length;i++){
-            address[] memory list = __parentReferee[__parentRefereeUsers[i]];
+            TAddressList memory list = __parentReferee[__parentRefereeUsers[i]];
             uint256 bonus = 0;
-            for(uint256 j=0;j<list.length;j++){
-                bonus += (pr *__parentLPToken[list[j]]/__totalParentLPToken)/10;
+            if (list.exists>0){
+                for(uint256 j=0;j<list.addrs.length;j++){
+                    bonus += (pr *__parentLPToken[list.addrs[j]]/__totalParentLPToken)/10;
+                }
             }
+
             __rewardFromParentRefer[__parentRefereeUsers[i]] += bonus;
         }
 
         for (uint256 i=0;i<__bfbRefereeUsers.length;i++){
-            address[] memory list = __bfbReferee[__bfbRefereeUsers[i]];
+            TAddressList memory list = __bfbReferee[__bfbRefereeUsers[i]];
             uint256 bonus = 0;
-            for(uint256 j=0;j<list.length;j++){
-                bonus += (pr *__bfbLPToken[list[j]]/__totalBfbLPToken)/10;
+            if(list.exists > 0){
+                for(uint256 j=0;j<list.addrs.length;j++){
+                    bonus += (pr *__bfbLPToken[list.addrs[j]]/__totalBfbLPToken)/10;
+                }
             }
             __rewardFromBfbRefer[__bfbRefereeUsers[i]] += bonus;
         }
@@ -170,7 +190,7 @@ contract BFBMiningContract is owned{
             __rewardFromBfb[__bfbLPUsers[i]] = __rewardFromBfb[__bfbLPUsers[i]] + br * __bfbLPToken[__bfbLPUsers[i]] / __totalBfbLPToken;
         }
 
-        __lastTime = __lastTime + uint(ndays) * 86400;
+        __lastTime = __lastTime + uint(ndays) * __onedaySeconds;
     }
 
     function DepositParent(address referee, uint256 parentLPAmount) external startReward{
@@ -251,41 +271,66 @@ contract BFBMiningContract is owned{
         emit ev_withdrawBfb(msg.sender,blptoken, bfbt);
     }
 
+    function GetMsgSender() external view returns(uint256,uint256){
+        return (__parentLPToken[msg.sender], __bfbLPToken[msg.sender]);
+    }
+
     function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
-        uint nowTime = block.timestamp;
         uint ndays;
-        if (nowTime <= __lastTime){
+        if (block.timestamp <= __lastTime){
             ndays = 0;
         }else{
-            ndays = (nowTime - __lastTime) / 86400;
+            ndays = (block.timestamp - __lastTime) / __onedaySeconds;
         }
 
         uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
         uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
 
-        address[] memory list = __bfbReferee[msg.sender];
-        uint256  bfBbonus = 0;
-        for(uint256 j=0;j<list.length;j++){
-            bfBbonus += (pr *__bfbLPToken[list[j]]/__totalBfbLPToken)/10;
-        }
-        bfBbonus = __rewardFromBfbRefer[msg.sender] + bfBbonus;
-
-        list = __parentReferee[msg.sender];
-        uint256 pBonus = 0;
-        for(uint256 j=0;j<list.length;j++){
-            pBonus += (pr *__parentLPToken[list[j]]/__totalParentLPToken)/10;
-        }
-
-        pBonus = __rewardFromParentRefer[msg.sender] + pBonus;
-
         return (__parentLPToken[msg.sender],
         __bfbLPToken[msg.sender],
-        __rewardFromParent[msg.sender] + pr * __parentLPToken[msg.sender] / __totalParentLPToken,
-        __rewardFromBfb[msg.sender] + br * __bfbLPToken[msg.sender] / __totalBfbLPToken,
-        pBonus,
-        bfBbonus);
+        _rewardParent(pr),
+        _rewardBfb(br),
+        _pBonus(pr),
+        _bfbBonus(br));
+    }
+
+    function _rewardParent(uint256 pr)private view returns(uint256){
+        if (__totalParentLPToken == 0){
+            return 0;
+        }
+
+        return (__rewardFromParent[msg.sender] + pr * __parentLPToken[msg.sender] / __totalParentLPToken);
+    }
+    function _rewardBfb(uint256 br)private view returns(uint256){
+        if (__totalBfbLPToken == 0){
+            return 0;
+        }
+        return (__rewardFromBfb[msg.sender] + br * __bfbLPToken[msg.sender] / __totalBfbLPToken);
+    }
+
+    function _bfbBonus(uint256 br) internal view returns(uint256){
+        TAddressList memory list = __bfbReferee[msg.sender];
+        uint256  bfBbonus = 0;
+        if (list.exists > 0){
+            for(uint256 j=0;j<list.addrs.length;j++){
+                bfBbonus += (br *__bfbLPToken[list.addrs[j]]/__totalBfbLPToken)/10;
+            }
+        }
+
+        return (__rewardFromBfbRefer[msg.sender] + bfBbonus);
+    }
+
+    function _pBonus( uint256 pr)private view returns (uint256){
+        TAddressList memory  list = __parentReferee[msg.sender];
+        uint256 pBonus = 0;
+        if (list.exists > 0){
+            for(uint256 j=0;j<list.addrs.length;j++){
+                pBonus += (pr *__parentLPToken[list.addrs[j]]/__totalParentLPToken)/10;
+            }
+        }
+
+        return (__rewardFromParentRefer[msg.sender] + pBonus);
     }
 
 }
-
 
