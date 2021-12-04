@@ -162,7 +162,7 @@ contract BFBMiningContract is owned{
         for (uint256 i=0;i<__parentRefereeUsers.length;i++){
             TAddressList memory list = __parentReferee[__parentRefereeUsers[i]];
             uint256 bonus = 0;
-            if (list.exists>0){
+            if (__totalParentLPToken>0 && list.exists>0){
                 for(uint256 j=0;j<list.addrs.length;j++){
                     bonus += (pr *__parentLPToken[list.addrs[j]]/__totalParentLPToken)/10;
                 }
@@ -174,7 +174,7 @@ contract BFBMiningContract is owned{
         for (uint256 i=0;i<__bfbRefereeUsers.length;i++){
             TAddressList memory list = __bfbReferee[__bfbRefereeUsers[i]];
             uint256 bonus = 0;
-            if(list.exists > 0){
+            if(__totalBfbLPToken>0 && list.exists > 0){
                 for(uint256 j=0;j<list.addrs.length;j++){
                     bonus += (pr *__bfbLPToken[list.addrs[j]]/__totalBfbLPToken)/10;
                 }
@@ -183,11 +183,20 @@ contract BFBMiningContract is owned{
         }
 
         for(uint256 i=0;i<__parentLPUsers.length;i++){
-            __rewardFromParent[__parentLPUsers[i]] = __rewardFromParent[__parentLPUsers[i]] + pr * __parentLPToken[__parentLPUsers[i]] / __totalParentLPToken;
+            if(__totalParentLPToken > 0){
+                __rewardFromParent[__parentLPUsers[i]] = __rewardFromParent[__parentLPUsers[i]] + pr * __parentLPToken[__parentLPUsers[i]] / __totalParentLPToken;
+            }else{
+                __rewardFromParent[__parentLPUsers[i]] = 0;
+            }
+
         }
 
         for (uint256 i=0;i<__bfbLPUsers.length;i++){
-            __rewardFromBfb[__bfbLPUsers[i]] = __rewardFromBfb[__bfbLPUsers[i]] + br * __bfbLPToken[__bfbLPUsers[i]] / __totalBfbLPToken;
+            if(__totalParentLPToken > 0){
+                __rewardFromBfb[__bfbLPUsers[i]] = __rewardFromBfb[__bfbLPUsers[i]] + br * __bfbLPToken[__bfbLPUsers[i]] / __totalBfbLPToken;
+            }else{
+                __rewardFromParent[__parentLPUsers[i]] = 0;
+            }
         }
 
         __lastTime = __lastTime + uint(ndays) * __onedaySeconds;
@@ -277,10 +286,11 @@ contract BFBMiningContract is owned{
 
     function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
         uint ndays;
-        if (block.timestamp <= __lastTime){
+        uint nowTime = block.timestamp;
+        if (nowTime <= __lastTime){
             ndays = 0;
         }else{
-            ndays = (block.timestamp - __lastTime) / __onedaySeconds;
+            ndays = (nowTime - __lastTime) / __onedaySeconds;
         }
 
         uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
