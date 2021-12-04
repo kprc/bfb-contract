@@ -279,11 +279,7 @@ contract BFBMiningContract is owned{
         __rewardFromBfbRefer[msg.sender] = 0;
         emit ev_withdrawBfb(msg.sender,blptoken, bfbt);
     }
-
-    function GetMsgSender() external view returns(uint256,uint256){
-        return (__parentLPToken[msg.sender], __bfbLPToken[msg.sender]);
-    }
-
+    
     function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
         uint ndays;
         uint nowTime = block.timestamp;
