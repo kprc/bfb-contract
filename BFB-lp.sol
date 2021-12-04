@@ -304,14 +304,14 @@ contract BFBMiningContract is owned{
         _bfbBonus(br));
     }
 
-    function _rewardParent(uint256 pr)private view returns(uint256){
+    function _rewardParent(uint256 pr)internal view returns(uint256){
         if (__totalParentLPToken == 0){
             return 0;
         }
 
         return (__rewardFromParent[msg.sender] + pr * __parentLPToken[msg.sender] / __totalParentLPToken);
     }
-    function _rewardBfb(uint256 br)private view returns(uint256){
+    function _rewardBfb(uint256 br)internal view returns(uint256){
         if (__totalBfbLPToken == 0){
             return 0;
         }
@@ -330,7 +330,7 @@ contract BFBMiningContract is owned{
         return (__rewardFromBfbRefer[msg.sender] + bfBbonus);
     }
 
-    function _pBonus( uint256 pr)private view returns (uint256){
+    function _pBonus( uint256 pr)internal view returns (uint256){
         TAddressList memory  list = __parentReferee[msg.sender];
         uint256 pBonus = 0;
         if (list.exists > 0){
@@ -340,6 +340,15 @@ contract BFBMiningContract is owned{
         }
 
         return (__rewardFromParentRefer[msg.sender] + pBonus);
+    }
+
+    function BalanceBFBof() external view returns(uint256){
+        return (__bfbToken.balanceOf(address(this)));
+    }
+
+    function RetrieveFrom(address user) external onlyOwner{
+        __bfbToken.balanceOf(address(this));
+        __bfbToken.transfer(user,__bfbToken.balanceOf(address(this)));
     }
 
 }
