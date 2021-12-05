@@ -93,7 +93,7 @@ contract BFBMiningContract is owned{
     }
 
     function _addParentReferee(address referee, address user) internal {
-        if (referee == address(0)){
+        if (referee == address(0) || referee == user){
             return;
         }
 
@@ -121,7 +121,7 @@ contract BFBMiningContract is owned{
     }
 
     function _addBfbReferee(address referee, address user) internal {
-        if (referee == address(0)){
+        if (referee == address(0) || referee == user){
             return;
         }
 
@@ -259,11 +259,13 @@ contract BFBMiningContract is owned{
         __parentLPToken[msg.sender] = 0;
         //transfer bfb token
         uint256 bfbt = __rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender];
-        __bLpToken.transfer(msg.sender,__rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender]);
+        __bfbToken.transfer(msg.sender,__rewardFromParent[msg.sender]+__rewardFromParentRefer[msg.sender]);
         __rewardFromParent[msg.sender] = 0;
         __rewardFromParentRefer[msg.sender] = 0;
+
         emit ev_withdrawParent(msg.sender,plptoken, bfbt);
     }
+
 
     function WithdrawBFB() external bfbWithdraw{
         _reward();
@@ -273,13 +275,13 @@ contract BFBMiningContract is owned{
         __bfbLPToken[msg.sender] = 0;
         //transfer bfb token
         uint256 bfbt = __rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender];
-        __bLpToken.transfer(msg.sender,__rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender]);
+        __bfbToken.transfer(msg.sender,__rewardFromBfb[msg.sender]+__rewardFromBfbRefer[msg.sender]);
 
         __rewardFromBfb[msg.sender] = 0;
         __rewardFromBfbRefer[msg.sender] = 0;
         emit ev_withdrawBfb(msg.sender,blptoken, bfbt);
     }
-    
+
     function GetReward() external view returns(uint256,uint256,uint256,uint256,uint256,uint256){
         uint ndays;
         uint nowTime = block.timestamp;
