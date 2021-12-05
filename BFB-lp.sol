@@ -8,8 +8,8 @@ import "./ITRC20.sol";
 contract BFBMiningContract is owned{
     using SafeMath for uint256;
 
-//    uint private __onedaySeconds=60;
-     uint private __onedaySeconds=86400;
+    uint private __onedaySeconds=60;
+    // uint private __onedaySeconds=86400;
 
     ITRC20 public __bfbToken;
     uint256 public __bfbReward = 68000*(10**18);        //68000
@@ -22,6 +22,7 @@ contract BFBMiningContract is owned{
     bool public __bfbWithdrawPause = false;
     bool public __parentWithdrawPause = false;
     uint public __lastTime;
+    uint public __expireTime;
 
     mapping(address=>uint256) public __parentLPToken;
     address[] public __parentLPUsers;
@@ -82,6 +83,7 @@ contract BFBMiningContract is owned{
         }
         __beginTime = beginTime;
         __lastTime = beginTime;
+        __expireTime = __beginTime + (180*__onedaySeconds);
     }
 
     function setParentWithdraw(bool flag) external onlyOwner{
@@ -154,10 +156,19 @@ contract BFBMiningContract is owned{
         if ( (nowTime <= __lastTime) || ((nowTime - __lastTime) < __onedaySeconds)){
             return;
         }
-
+        if(__lastTime == __expireTime){
+            return;
+        }
+        if (nowTime > __expireTime){
+            nowTime = __expireTime;
+        }
         uint  ndays = (nowTime - __lastTime) / __onedaySeconds;
+        if (ndays == 0){
+            return;
+        }
         uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
         uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
+
 
         for (uint256 i=0;i<__parentRefereeUsers.length;i++){
             TAddressList memory list = __parentReferee[__parentRefereeUsers[i]];
@@ -288,6 +299,9 @@ contract BFBMiningContract is owned{
         if (nowTime <= __lastTime){
             ndays = 0;
         }else{
+            if (nowTime > __expireTime){
+                nowTime = __expireTime;
+            }
             ndays = (nowTime - __lastTime) / __onedaySeconds;
         }
 
@@ -350,4 +364,5 @@ contract BFBMiningContract is owned{
     }
 
 }
+
 
