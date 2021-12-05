@@ -8,8 +8,8 @@ import "./ITRC20.sol";
 contract BFBMiningContract is owned{
     using SafeMath for uint256;
 
-    uint private __onedaySeconds=60;
-    // uint private __onedaySeconds=86400;
+//    uint private __onedaySeconds=60;
+     uint private __onedaySeconds=86400;
 
     ITRC20 public __bfbToken;
     uint256 public __bfbReward = 68000*(10**18);        //68000
