@@ -363,6 +363,13 @@ contract BFBMiningContract is owned{
         __bfbToken.transfer(user,__bfbToken.balanceOf(address(this)));
     }
 
+    function BalanceBLPof() external view returns (uint256){
+        return (__bLpToken.balanceOf(address(this)));
+    }
+
+    function BalancePLPof() external view returns(uint256){
+        return (__pLpToken.balanceOf(address(this)));
+    }
 }
 
 
