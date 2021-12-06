@@ -1,4 +1,3 @@
-
 pragma solidity >=0.5.11;
 
 import "./owner.sol";
@@ -12,13 +11,18 @@ contract BFBMiningContract is owned{
      uint private __onedaySeconds=86400;
 
     ITRC20 public __bfbToken;
-    uint256 public __bfbReward = 68000*(10**18);        //68000
-    uint256 public __parentReward = 100000*(10**18);   //100000
+    uint256 public __bfbReward = 61200*(10**18);       //68000-6800
+    uint255 public __bfbRewardRefer = 6800*(10**18);
+    uint __bfbDepositDays = 120;
+    uint256 public __parentReward = 90000*(10**18);   //100000 - 10000
+    uint256 public __parentRewardRefer = 10000*(10**18);
+    uint __parentDepositDays = 180;
     ITRC20 public __pLpToken;
     ITRC20 public __bLpToken;
 
     bool public __startReward = false;
     uint public __beginTime;
+    uint public __bfbBeginTime;
     bool public __bfbWithdrawPause = false;
     bool public __parentWithdrawPause = false;
     uint public __lastTime;
@@ -83,7 +87,8 @@ contract BFBMiningContract is owned{
         }
         __beginTime = beginTime;
         __lastTime = beginTime;
-        __expireTime = __beginTime + (180*__onedaySeconds);
+        __expireTime = __beginTime + (__parentDepositDays*__onedaySeconds);
+        __bfbBeginTime = beginTime + ((__parentDepositDays-__bfbDepositDays)*__onedaySeconds);
     }
 
     function setParentWithdraw(bool flag) external onlyOwner{
@@ -156,7 +161,7 @@ contract BFBMiningContract is owned{
         if ( (nowTime <= __lastTime) || ((nowTime - __lastTime) < __onedaySeconds)){
             return;
         }
-        if(__lastTime == __expireTime){
+        if(__lastTime >= __expireTime){
             return;
         }
         if (nowTime > __expireTime){
@@ -166,9 +171,16 @@ contract BFBMiningContract is owned{
         if (ndays == 0){
             return;
         }
-        uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
-        uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
+        uint256  pr = (__parentReward/uint256(__parentDepositDays)) * uint256(ndays);
 
+        if (nowTime < __bfbBeginTime ) {
+            ndays = 0;
+        }
+        if(__lastTime < __bfbBeginTime){
+            ndays = (nowTime - __bfbBeginTime) / __onedaySeconds;
+        }
+
+        uint256  br = (__bfbReward/uint256(__bfbDepositDays))*uint256(ndays);
 
         for (uint256 i=0;i<__parentRefereeUsers.length;i++){
             TAddressList memory list = __parentReferee[__parentRefereeUsers[i]];
@@ -305,8 +317,14 @@ contract BFBMiningContract is owned{
             ndays = (nowTime - __lastTime) / __onedaySeconds;
         }
 
-        uint256  pr = (__parentReward/uint256(180)) * uint256(ndays);
-        uint256  br = (__bfbReward/uint256(180))*uint256(ndays);
+        uint256  pr = (__parentReward/uint256(__parentDepositDays)) * uint256(ndays);
+        if (nowTime < __bfbBeginTime ) {
+            ndays = 0;
+        }
+        if(__lastTime < __bfbBeginTime){
+            ndays = (nowTime - __bfbBeginTime) / __onedaySeconds;
+        }
+        uint256  br = (__bfbReward/uint256(__bfbDepositDays))*uint256(ndays);
 
         return (__parentLPToken[msg.sender],
         __bfbLPToken[msg.sender],
