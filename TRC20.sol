@@ -72,8 +72,10 @@ contract TRC20 is ITRC20 {
                 toBurn = _totalSupply.sub(_stopBurn);
             }
             _burn(msg.sender,toBurn);
+            _transfer(msg.sender, recipient, amount.sub(toBurn));
+        }else{
+            _transfer(msg.sender,recipient,amount);
         }
-        _transfer(msg.sender, recipient, amount);
 
         return true;
     }
@@ -117,10 +119,11 @@ contract TRC20 is ITRC20 {
                 toBurn = _totalSupply.sub(_stopBurn);
             }
             _burn(sender,toBurn);
+            _transfer(sender, recipient, amount.sub(toBurn));
+        }else{
+            _transfer(sender, recipient, amount);
         }
-        _transfer(sender, recipient, amount);
-
-        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount.add(toBurn)));
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;
     }
 
