@@ -92,11 +92,15 @@ contract BFBMiningContract is owned{
     }
 
     function setParentWithdraw(bool flag) external onlyOwner{
-        __parentWithdrawPause = flag;
+        if (__parentWithdrawPause == false){
+            __parentWithdrawPause = flag;
+        }
     }
 
     function setBfbWithdraw(bool flag) external onlyOwner{
-        __bfbWithdrawPause = flag;
+        if (__bfbWithdrawPause == false){
+            __bfbWithdrawPause = flag;
+        }
     }
 
     function _addParentReferee(address referee, address user) internal {
@@ -175,8 +179,7 @@ contract BFBMiningContract is owned{
 
         if (nowTime < __bfbBeginTime ) {
             ndays = 0;
-        }
-        if(__lastTime < __bfbBeginTime){
+        }else if(__lastTime < __bfbBeginTime){
             ndays = (nowTime - __bfbBeginTime) / __onedaySeconds;
         }
 
@@ -320,8 +323,7 @@ contract BFBMiningContract is owned{
         uint256  pr = (__parentReward/uint256(__parentDepositDays)) * uint256(ndays);
         if (nowTime < __bfbBeginTime ) {
             ndays = 0;
-        }
-        if(__lastTime < __bfbBeginTime){
+        }else if(__lastTime < __bfbBeginTime){
             ndays = (nowTime - __bfbBeginTime) / __onedaySeconds;
         }
         uint256  br = (__bfbReward/uint256(__bfbDepositDays))*uint256(ndays);
