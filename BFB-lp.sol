@@ -12,7 +12,7 @@ contract BFBMiningContract is owned{
 
     ITRC20 public __bfbToken;
     uint256 public __bfbReward = 61200*(10**18);       //68000-6800
-    uint255 public __bfbRewardRefer = 6800*(10**18);
+    uint256 public __bfbRewardRefer = 6800*(10**18);
     uint __bfbDepositDays = 120;
     uint256 public __parentReward = 90000*(10**18);   //100000 - 10000
     uint256 public __parentRewardRefer = 10000*(10**18);
