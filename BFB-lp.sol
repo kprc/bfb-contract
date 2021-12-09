@@ -7,16 +7,17 @@ import "./ITRC20.sol";
 contract BFBMiningContract is owned{
     using SafeMath for uint256;
 
-//    uint private __onedaySeconds=60;
-     uint private __onedaySeconds=86400;
+    uint private __onedaySeconds=60;
+    //  uint private __onedaySeconds=86400;
 
     ITRC20 public __bfbToken;
-    uint256 public __bfbReward = 61200*(10**18);       //68000-6800
-    uint256 public __bfbRewardRefer = 6800*(10**18);
+
     uint __bfbDepositDays = 120;
-    uint256 public __parentReward = 90000*(10**18);   //100000 - 10000
-    uint256 public __parentRewardRefer = 10000*(10**18);
     uint __parentDepositDays = 180;
+
+    uint256 public __bfbReward = 68000;
+    uint256 public __parentReward = 100000;
+
     ITRC20 public __pLpToken;
     ITRC20 public __bLpToken;
 
@@ -103,6 +104,17 @@ contract BFBMiningContract is owned{
         }
     }
 
+    function _parentRewardAmount() internal view returns(uint256){
+        return (9*((__bfbToken.balanceOf(address(this))*__parentReward)/(__bfbReward+__parentReward))/10);
+    }
+
+
+    function _bfbRewardAmount() internal view returns(uint256){
+        return (9*((__bfbToken.balanceOf(address(this))*__bfbReward)/(__bfbReward+__parentReward))/10);
+    }
+
+
+
     function _addParentReferee(address referee, address user) internal {
         if (referee == address(0) || referee == user){
             return;
@@ -175,7 +187,7 @@ contract BFBMiningContract is owned{
         if (ndays == 0){
             return;
         }
-        uint256  pr = (__parentReward/uint256(__parentDepositDays)) * uint256(ndays);
+        uint256  pr = (_parentRewardAmount()/uint256(__parentDepositDays)) * uint256(ndays);
 
         if (nowTime < __bfbBeginTime ) {
             ndays = 0;
@@ -183,7 +195,7 @@ contract BFBMiningContract is owned{
             ndays = (nowTime - __bfbBeginTime) / __onedaySeconds;
         }
 
-        uint256  br = (__bfbReward/uint256(__bfbDepositDays))*uint256(ndays);
+        uint256  br = (_bfbRewardAmount()/uint256(__bfbDepositDays))*uint256(ndays);
 
         for (uint256 i=0;i<__parentRefereeUsers.length;i++){
             TAddressList memory list = __parentReferee[__parentRefereeUsers[i]];
@@ -218,10 +230,10 @@ contract BFBMiningContract is owned{
         }
 
         for (uint256 i=0;i<__bfbLPUsers.length;i++){
-            if(__totalParentLPToken > 0){
+            if(__totalBfbLPToken > 0){
                 __rewardFromBfb[__bfbLPUsers[i]] = __rewardFromBfb[__bfbLPUsers[i]] + br * __bfbLPToken[__bfbLPUsers[i]] / __totalBfbLPToken;
             }else{
-                __rewardFromParent[__parentLPUsers[i]] = 0;
+                __rewardFromBfb[__bfbLPUsers[i]] = 0;
             }
         }
 
@@ -320,13 +332,13 @@ contract BFBMiningContract is owned{
             ndays = (nowTime - __lastTime) / __onedaySeconds;
         }
 
-        uint256  pr = (__parentReward/uint256(__parentDepositDays)) * uint256(ndays);
+        uint256  pr = (_parentRewardAmount()/uint256(__parentDepositDays)) * uint256(ndays);
         if (nowTime < __bfbBeginTime ) {
             ndays = 0;
         }else if(__lastTime < __bfbBeginTime){
             ndays = (nowTime - __bfbBeginTime) / __onedaySeconds;
         }
-        uint256  br = (__bfbReward/uint256(__bfbDepositDays))*uint256(ndays);
+        uint256  br = (_bfbRewardAmount()/uint256(__bfbDepositDays))*uint256(ndays);
 
         return (__parentLPToken[msg.sender],
         __bfbLPToken[msg.sender],
