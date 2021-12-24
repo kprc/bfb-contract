@@ -1,7 +1,8 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 import "./ITRC20.sol";
 import "./SafeMath.sol";
+import "./owner.sol";
 
 /**
  * @dev Implementation of the {ITRC20} interface.
@@ -27,7 +28,7 @@ import "./SafeMath.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {ITRC20-approve}.
  */
-contract TRC20 is ITRC20 {
+contract TRC20 is ITRC20,owned {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -38,6 +39,7 @@ contract TRC20 is ITRC20 {
     uint256 private _burn_ratio = 1000;   //0.1%
     uint256 private _burn_base = 1000000;
     uint256 private _stopBurn;
+    bool private _begin_burn = false;
 
     /**
      * @dev See {ITRC20-totalSupply}.
@@ -57,6 +59,13 @@ contract TRC20 is ITRC20 {
         return _balances[account];
     }
 
+    function setBeginBurn(bool flag) external onlyOwner{
+        _begin_burn = flag;
+    }
+
+
+
+
     /**
      * @dev See {ITRC20-transfer}.
      *
@@ -66,7 +75,7 @@ contract TRC20 is ITRC20 {
      * - the caller must have a balance of at least `amount`.
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
-        if (_totalSupply > _stopBurn){
+        if (_begin_burn == true && _totalSupply > _stopBurn){
             uint256 toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
             if (_totalSupply.sub(toBurn) < _stopBurn){
                 toBurn = _totalSupply.sub(_stopBurn);
@@ -113,7 +122,7 @@ contract TRC20 is ITRC20 {
      */
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
         uint256 toBurn = 0;
-        if (_totalSupply > _stopBurn){
+        if (_begin_burn == true && _totalSupply > _stopBurn){
             toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
             if (_totalSupply.sub(toBurn) < _stopBurn){
                 toBurn = _totalSupply.sub(_stopBurn);
