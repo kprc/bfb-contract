@@ -11,7 +11,9 @@ contract BFBSubMiningContract is owned{
     uint private __onedaySeconds=86400;
 
     ITRC20 public __bfbToken;
-    uint256 public __Reward = 4000000*(10**6);        //400w
+    uint256 public __Reward = 3600000*(10**6);        //400w
+    uint256 public __OfferReward =  400000*(10**6);        //40w
+
 
     ITRC20 public __subLpToken;
     uint256 public __totalBfbLPToken;
@@ -19,6 +21,7 @@ contract BFBSubMiningContract is owned{
     uint public __lastTime;
     uint public __beginTime;
     uint public __expireTime;
+    uint public __withdrawLeftTime;
     bool public __withdrawFlag;
     bool public __startReward;
 
@@ -36,8 +39,6 @@ contract BFBSubMiningContract is owned{
 
     mapping(address=>DepositList) __depositUsers;
     address[] public __depositUserAddress;
-
-
 
     struct RewardInfo{
         uint256 Reward;
@@ -63,9 +64,9 @@ contract BFBSubMiningContract is owned{
         __beginTime = beginTime;
         __lastTime = beginTime;
         __expireTime = __beginTime + (720*__onedaySeconds);//2 years, 30 day per one month
+        __withdrawLeftTime = __expireTime + (30*__onedaySeconds);
         __startReward = true;
     }
-
 
 
     function setWithdrawFlag(bool flag) external onlyOwner{
@@ -86,10 +87,16 @@ contract BFBSubMiningContract is owned{
         _;
     }
 
+    function CalcSetReward(address[] users, uint256[] reward,uint256 offerReward) external onlyOwner{
+        require(block.timestamp > (____lastTime + (30*__onedaySeconds)));
+
+
+
+    }
+
 
 
     function DepositSubLP(address referee, uint256 lpAmount) external startReward{
-
 
         emit ev_deposit(msg.sender, referee, lpAmount,block.timestamp);
     }
@@ -104,6 +111,13 @@ contract BFBSubMiningContract is owned{
     //lp token, reward, offerReward
     function GetReward(address user) external view returns(uint256,uint256,uint256,uint256,uint256){
         return ;
+    }
+
+    function WithDrawLeftBfb(address user) external onlyOwner{
+        require(block.timestamp > __withdrawLeftTime, "only time after withdraw left time can do it");
+
+        __bfbToken.balanceOf(address(this));
+        __bfbToken.transfer(user,__bfbToken.balanceOf(address(this)));
     }
 
 }
