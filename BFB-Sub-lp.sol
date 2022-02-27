@@ -57,6 +57,10 @@ contract BFBSubMiningContract is owned{
         __bfbToken = ITRC20(bfbToken);
     }
 
+    function getUserTotalDeposit(address user) external view returns (uint256){
+        return (__depositUsers[user].TotalAmount);
+    }
+
     function setStartTime(uint beginTime) external onlyOwner{
         if (beginTime == 0){
             beginTime = block.timestamp;
@@ -67,6 +71,7 @@ contract BFBSubMiningContract is owned{
         __withdrawLeftTime = __expireTime + (30*__onedaySeconds);
         __startReward = true;
     }
+
 
 
     function setWithdrawFlag(bool flag) external onlyOwner{
@@ -96,16 +101,32 @@ contract BFBSubMiningContract is owned{
         require(block.timestamp > (____lastTime + (30*__onedaySeconds)));
 
         for (uint256 i=0;i<users.length;i++){
-            __rewardInfos[users[i]].Reward = reward[i];
-            __rewardInfos[users[i]].OfferReward = offerReward[i];
-            __rewardInfos[users[i]].TimeStamp = block.timestamp;
+            __rewardInfos[users[i]] = RewardInfo(reward[i],offerReward[i],block.timestamp);
         }
 
     }
 
 
     function DepositSubLP(address referee, uint256 lpAmount) external startReward{
-        
+        require(lpAmount>0,"lp amount must large than 0");
+        require(__subLpToken.balanceOf(msg.sender)>=lpAmount," lp amount not enough");
+
+
+        if (__depositUsers[msg.sender].TotalAmount == 0){
+            uint256 memory idx = __depositUserAddress.push(msg.sender);
+            __depositUsers[msg.sender].index = idx;
+        }
+
+        __depositUsers[msg.sender].TotalAmount = __depositUsers[msg.sender].TotalAmount+lpAmount;
+        if (address(0) == __depositUsers[msg.sender].Recommend){
+            __depositUsers[msg.sender].Recommend = referee;
+        }
+
+        __depositUsers[msg.sender].arrDeposit.push(DepositInfo(lpAmount,block.timestamp));
+
+        __subLpToken.transfer(address(this), lpAmount);
+        __totalBfbLPToken = __totalBfbLPToken + lpAmount;
+
         emit ev_deposit(msg.sender, referee, lpAmount,block.timestamp);
     }
 
@@ -122,12 +143,16 @@ contract BFBSubMiningContract is owned{
         //transfer lp
         __subLpToken.transfer(msg.sender,__depositUsers[msg.sender].TotalAmount);
         __totalBfbLPToken -= __depositUsers[msg.sender].TotalAmount;
+
+
         __depositUsers[msg.sender].TotalAmount = 0;
         delete __depositUsers[msg.sender].arrDeposit;
         removeIndex(__depositUsers[msg.sender].index);
 
         //transfer bfb
-        __bfbToken.transfer(msg.sender,amount);
+        if (amount>0){
+            __bfbToken.transfer(msg.sender,amount);
+        }
 
         __rewardInfos[msg.sender] = RewardInfo(0,0,0);
 
@@ -150,7 +175,7 @@ contract BFBSubMiningContract is owned{
 
     //lp token, reward, offerReward
     function GetReward(address user) external view returns(uint256,uint256,uint256,uint256,uint256){
-        return ;
+        return (__depositUsers[user].TotalAmount,__rewardInfos[user].Reward,__rewardInfos[user].OfferReward,0,0);
     }
 
     function WithDrawLeftBfb(address user) external onlyOwner{
