@@ -31,11 +31,11 @@ contract BFBParentMiningContract is owned{
 
     struct DepositList {
         address Recommend;
-        uint256 TotalAmount;
-        DepositInfo[] Depositlist;
+        uint256 index;
+        DepositInfo[] arrDeposit;
     }
 
-    mapping(address=>DepositList) __depositUsers;
+    mapping(address=>DepositList) public __depositUsers;
     address[] public __depositUserAddress;
 
 
@@ -45,7 +45,7 @@ contract BFBParentMiningContract is owned{
         uint    TimeStamp;
     }
 
-    mapping(address=>RewardInfo) __rewardInfos;
+    mapping(address=>RewardInfo) public __rewardInfos;
 
     event ev_deposit(address user,address referee, uint256 amount,uint timestamp);
     event ev_withdrawLp(address user,uint256 reward, uint256 offerReward);
@@ -106,11 +106,41 @@ contract BFBParentMiningContract is owned{
     }
 
     function WithdrawXmfLP() external startWithdraw {
-        uint256 amount = 0;
-        uint256 reward = 0;
-        uint256 offerReward = 0;
+        uint256 memory amount = __rewardInfos[msg.sender].Reward + __rewardInfos[msg.sender].OfferReward;
 
-        emit ev_withdrawLp(msg.sender,reward,offerReward);
+        require(__depositUsers[msg.sender].TotalAmount > 0, "no lp token in contract");
+
+        require(__subLpToken.balanceOf(this) >= __depositUsers[msg.sender].TotalAmount,"not enough lp token");
+
+        require(__bfbToken.balanceOf(this)>=amount);
+
+        //transfer lp
+        __xmfLpToken.transfer(msg.sender,__depositUsers[msg.sender].TotalAmount);
+        __totalXmfLPToken -= __depositUsers[msg.sender].TotalAmount;
+        __depositUsers[msg.sender].TotalAmount = 0;
+        delete __depositUsers[msg.sender].arrDeposit;
+        removeIndex(__depositUsers[msg.sender].index);
+
+        //transfer bfb
+        __bfbToken.transfer(msg.sender,amount);
+
+        __rewardInfos[msg.sender] = RewardInfo(0,0,0);
+
+        emit ev_withdrawLp(msg.sender,__rewardInfos[msg.sender].Reward,__rewardInfos[msg.sender].OfferReward);
+    }
+
+    function removeIndex(uint256 index) internal {
+        if (idx >= __depositUserAddress.length){
+            return;
+        }
+
+        for (uint256 i=0;i<__depositUserAddress.length-1;i++){
+            __depositUserAddress[i] = __depositUserAddress[i+1];
+        }
+
+        delete __depositUserAddress[__depositUserAddress.length-1];
+        __depositUserAddress.length --;
+
     }
     //lp token, reward, offerReward
     function GetReward(address user) external view returns(uint256,uint256,uint256,uint256,uint256){
