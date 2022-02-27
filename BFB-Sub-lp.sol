@@ -38,17 +38,15 @@ contract BFBSubMiningContract is owned{
     address[] public __depositUserAddress;
 
 
-    struct RewardInfo {
-        uint256 RewardAmount;
-        uint TimeStamp;
+
+    struct RewardInfo{
+        uint256 Reward;
+        uint256 OfferReward;
+        uint    TimeStamp;
     }
 
-    struct RewardList{
-        uint256 TotalReward;
-        RewardInfo[] RewardList;
-    }
-
-    mapping(address=>RewardList) __rewardInfos;
+    mapping(address=>RewardInfo) __rewardInfos;
+    address[] public __rewardUserAddress;
 
     event ev_deposit(address user,address referee, uint256 amount,uint timestamp);
     event ev_withdrawLp(address user,uint256 reward, uint256 offerReward);
@@ -68,6 +66,8 @@ contract BFBSubMiningContract is owned{
         __startReward = true;
     }
 
+
+
     function setWithdrawFlag(bool flag) external onlyOwner{
         __withdrawFlag = flag;
     }
@@ -86,6 +86,8 @@ contract BFBSubMiningContract is owned{
         _;
     }
 
+
+
     function DepositSubLP(address referee, uint256 lpAmount) external startReward{
 
 
@@ -100,7 +102,7 @@ contract BFBSubMiningContract is owned{
         emit ev_withdrawLp(msg.sender,reward,offerReward);
     }
     //lp token, reward, offerReward
-    function GetReward(address user) external view returns(uint256,uint256,uint256){
+    function GetReward(address user) external view returns(uint256,uint256,uint256,uint256,uint256){
         return ;
     }
 
