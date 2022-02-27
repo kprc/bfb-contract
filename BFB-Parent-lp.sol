@@ -46,7 +46,6 @@ contract BFBParentMiningContract is owned{
     }
 
     mapping(address=>RewardInfo) __rewardInfos;
-    address[] public __rewardUserAddress;
 
     event ev_deposit(address user,address referee, uint256 amount,uint timestamp);
     event ev_withdrawLp(address user,uint256 reward, uint256 offerReward);
@@ -85,13 +84,21 @@ contract BFBParentMiningContract is owned{
         _;
     }
 
-    function CalcSetReward(address[] users, uint256[] reward,uint256 offerReward) external onlyOwner{
-        require(block.timestamp > (____lastTime + (30*__onedaySeconds)));
-
-
-
+    function getReward(address user) external view returns(uint256,uint256,uint){
+        RewardInfo memory d = __rewardInfos[user];
+        return (d.Reward,d.OfferReward,d.TimeStamp);
     }
 
+    function CalcSetReward(address[] memory users, uint256[] memory reward,uint256[] memory offerReward) external onlyOwner{
+        require(block.timestamp > (____lastTime + (30*__onedaySeconds)));
+
+        for (uint256 i=0;i<users.length;i++){
+            __rewardInfos[users[i]].Reward = reward[i];
+            __rewardInfos[users[i]].OfferReward = offerReward[i];
+            __rewardInfos[users[i]].TimeStamp = block.timestamp;
+        }
+
+    }
     function DepositXmfLP(address referee, uint256 lpAmount) external startReward{
 
 
