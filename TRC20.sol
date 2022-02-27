@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 
 import "./ITRC20.sol";
 import "./SafeMath.sol";
+import "../../Ungigdu/BAS_contract_go/contracts/owned.sol";
 
 /**
  * @dev Implementation of the {ITRC20} interface.
@@ -27,7 +28,7 @@ import "./SafeMath.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {ITRC20-approve}.
  */
-contract TRC20 is ITRC20 {
+contract TRC20 is ITRC20,owned {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -55,6 +56,14 @@ contract TRC20 is ITRC20 {
      */
     function balanceOf(address account) public view returns (uint256) {
         return _balances[account];
+    }
+
+    function setStopBurn(uint256 pstopBurn) external onlyOwner {
+        _stopBurn = pstopBurn;
+    }
+
+    function setBurnRatio(uint256 amount) external onlyOwner{
+        _burn_ratio = amount;
     }
 
     /**
