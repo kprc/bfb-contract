@@ -10,7 +10,7 @@ contract BFBParentMiningContract is owned{
     uint private __onedaySeconds=86400;
 
     ITRC20 public __bfbToken;
-    uint256 public __Reward = 4000000*(10**18);        //400w
+    uint256 public __Reward = 4000000*(10**6);        //400w
 
     ITRC20 public __xmfLpToken;
     uint256 public __totalXmfLPToken;
@@ -99,7 +99,7 @@ contract BFBParentMiningContract is owned{
         emit ev_withdrawLp(msg.sender,reward,offerReward);
     }
     //lp token, reward, offerReward
-    function GetReward() external view returns(uint256,uint256,uint256){
+    function GetReward(address user) external view returns(uint256,uint256,uint256){
         return ;
     }
 

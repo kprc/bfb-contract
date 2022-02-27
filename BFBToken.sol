@@ -18,7 +18,7 @@ contract BFBToken is TRC20, TRC20Detailed,owned {
     /**
      * @dev Constructor that gives msg.sender all of existing tokens.
      */
-    constructor () public TRC20Detailed("BaoFuBi", "BFB", 18) {
+    constructor () public TRC20Detailed("BaoFuBi", "BFB", 6) {
         _mint(msg.sender, 10000000 * (10 ** uint256(decimals())), 10000000 * (10 ** uint256(decimals())),0);
     }
 }
