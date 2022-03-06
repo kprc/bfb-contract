@@ -1,4 +1,4 @@
-
+//SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.11;
 
 import "./owner.sol";
@@ -55,7 +55,7 @@ contract LPMiningContract is owned{
     event ev_withdrawLp(address user);
 
 
-    constructor (address lpTokenAddr, address rewardToken) public{
+    constructor (address lpTokenAddr, address rewardToken) {
         __LpTokenContract = ITRC20(lpTokenAddr);
         __RewardTokenContract = ITRC20(rewardToken);
     }
@@ -90,7 +90,7 @@ contract LPMiningContract is owned{
     }
 
     modifier startWithdraw{
-        require(Withdraw==true,"wait to withdraw...");
+        require(__withdrawFlag==true,"wait to withdraw...");
         _;
     }
 
@@ -136,8 +136,8 @@ contract LPMiningContract is owned{
         require(__globalUserDepositsAddr.length > addrIdx,"addr index over flow");
         require(__globalUserDepositsAddr[addrIdx] == msg.sender,"address not correct");
         require(__globalUserDeposits[msg.sender].TotalDepositAmount > 0, "no lp token in contract");
-        require(__LpTokenContract.balanceOf(this) >= __globalUserDeposits[msg.sender].TotalDepositAmount,"not enough lp token");
-        require(__RewardTokenContract.balanceOf(this)>=__globalUserReward[msg.sender].Reward + __globalUserReward[msg.sender].OfferReward);
+        require(__LpTokenContract.balanceOf(address(this)) >= __globalUserDeposits[msg.sender].TotalDepositAmount,"not enough lp token");
+        require(__RewardTokenContract.balanceOf(address(this))>=__globalUserReward[msg.sender].Reward + __globalUserReward[msg.sender].OfferReward);
 
         //transfer lp
         __LpTokenContract.transfer(msg.sender,__globalUserDeposits[msg.sender].TotalDepositAmount);
@@ -145,7 +145,7 @@ contract LPMiningContract is owned{
 
 
         __globalUserDeposits[msg.sender].TotalDepositAmount = 0;
-        delete __globalUserDeposits[msg.sender].arrDeposit;
+        delete __globalUserDeposits[msg.sender].items;
         removeAddr(addrIdx);
 
         //transfer bfb
@@ -162,31 +162,31 @@ contract LPMiningContract is owned{
         for (uint256 i=idx;i<__globalUserDepositsAddr.length-1;i++){
             __globalUserDepositsAddr[i] = __globalUserDepositsAddr[i+1];
         }
-
-        delete __globalUserDepositsAddr[__depositUserAddress.length-1];
-        __globalUserDepositsAddr.length --;
+        __globalUserDepositsAddr.pop();
+        //        delete items[__globalUserDepositsAddr.length-1];
+        //        __globalUserDepositsAddr.length --;
     }
 
 
-//    function removeAddr(address user) internal {
-//        uint256 memory idx = __globalUserDepositsAddr.length;
-//
-//        for (uint256 i=0;i<__globalUserDepositsAddr.length; i++){
-//            if (user == __globalUserDepositsAddr[i]){
-//                idx = i;
-//            }
-//        }
-//        if (idx == __globalUserDepositsAddr.length){
-//            return;
-//        }
-//
-//        for (uint256 i=idx;i<__globalUserDepositsAddr.length-1;i++){
-//            __globalUserDepositsAddr[i] = __globalUserDepositsAddr[i+1];
-//        }
-//
-//        delete __globalUserDepositsAddr[__depositUserAddress.length-1];
-//        __globalUserDepositsAddr.length --;
-//    }
+    //    function removeAddr(address user) internal {
+    //        uint256 memory idx = __globalUserDepositsAddr.length;
+    //
+    //        for (uint256 i=0;i<__globalUserDepositsAddr.length; i++){
+    //            if (user == __globalUserDepositsAddr[i]){
+    //                idx = i;
+    //            }
+    //        }
+    //        if (idx == __globalUserDepositsAddr.length){
+    //            return;
+    //        }
+    //
+    //        for (uint256 i=idx;i<__globalUserDepositsAddr.length-1;i++){
+    //            __globalUserDepositsAddr[i] = __globalUserDepositsAddr[i+1];
+    //        }
+    //
+    //        delete __globalUserDepositsAddr[__depositUserAddress.length-1];
+    //        __globalUserDepositsAddr.length --;
+    //    }
 
     //lp token, reward, offerReward
     function GetReward(address user) external view returns(uint256,uint256,uint256){
