@@ -5,7 +5,7 @@ import "./owner.sol";
 import "./SafeMath.sol";
 import "./ITRC20.sol";
 
-contract BFBSubMiningContract is owned{
+contract BFBMiningContract is owned{
     using SafeMath for uint256;
 
     uint private __onedaySeconds=86400;
@@ -48,7 +48,7 @@ contract BFBSubMiningContract is owned{
     }
 
 
-    mapping(address=>RewardInfo) public __globalUserReward;
+    mapping(address=>UserRewardItem) public __globalUserReward;
 
 
     event ev_deposit(address user,address referee, uint256 amount,uint timestamp);
@@ -99,7 +99,7 @@ contract BFBSubMiningContract is owned{
         require(block.timestamp > (__lastTime + (30*__onedaySeconds)));
 
         for (uint256 i=0;i<users.length;i++){
-            __globalUserReward[users[i]] = RewardInfo(reward[i],offerReward[i],block.timestamp);
+            __globalUserReward[users[i]] = UserRewardItem(reward[i],offerReward[i],block.timestamp);
         }
         __lastTime += 30*__onedaySeconds;
     }
@@ -121,22 +121,19 @@ contract BFBSubMiningContract is owned{
 
         __globalUserDeposits[msg.sender].items.push(DepositItem(lpAmount,block.timestamp));
 
-        __RewardTokenContract.transferFrom(msg.sender,address(this), lpAmount);
-        __TotalLPToken = __TotalLPToken + lpAmount;
+        __LpTokenContract.transferFrom(msg.sender,address(this), lpAmount);
+        __TotalLPToken += lpAmount;
 
         emit ev_deposit(msg.sender, referee, lpAmount,block.timestamp);
     }
 
 
     function WithdrawAll(uint256 addrIdx) external startWithdraw {
-
-        uint256 memory amount = __globalUserReward[msg.sender].Reward + __globalUserReward[msg.sender].OfferReward;
-
+        require(__globalUserDepositsAddr.length > addrIdx,"addr index over flow");
+        require(__globalUserDepositsAddr[addrIdx] == msg.sender,"address not correct");
         require(__globalUserDeposits[msg.sender].TotalDepositAmount > 0, "no lp token in contract");
-
-        require(__RewardTokenContract.balanceOf(this) >= __globalUserDeposits[msg.sender].TotalDepositAmount,"not enough lp token");
-
-        require(__RewardTokenContract.balanceOf(this)>=amount);
+        require(__LpTokenContract.balanceOf(this) >= __globalUserDeposits[msg.sender].TotalDepositAmount,"not enough lp token");
+        require(__RewardTokenContract.balanceOf(this)>=__globalUserReward[msg.sender].Reward + __globalUserReward[msg.sender].OfferReward);
 
         //transfer lp
         __LpTokenContract.transfer(msg.sender,__globalUserDeposits[msg.sender].TotalDepositAmount);
@@ -145,30 +142,19 @@ contract BFBSubMiningContract is owned{
 
         __globalUserDeposits[msg.sender].TotalDepositAmount = 0;
         delete __globalUserDeposits[msg.sender].arrDeposit;
-        removeAddr(msg.sender);
+        removeAddr(addrIdx);
 
         //transfer bfb
-        if (amount>0){
-            __RewardTokenContract.transfer(msg.sender,amount);
+        if (__globalUserReward[msg.sender].Reward + __globalUserReward[msg.sender].OfferReward>0){
+            __RewardTokenContract.transfer(msg.sender,__globalUserReward[msg.sender].Reward + __globalUserReward[msg.sender].OfferReward);
         }
 
-        __globalUserReward[msg.sender] = RewardInfo(0,0,0);
+        __globalUserReward[msg.sender] = UserRewardItem(0,0,0);
 
         emit ev_withdrawLp(msg.sender);
     }
 
-    function removeAddr(address user) internal {
-        uint256 memory idx = __globalUserDepositsAddr.length;
-
-        for (uint256 i=0;i<__globalUserDepositsAddr.length; i++){
-            if (user == __globalUserDepositsAddr[i]){
-                idx = i;
-            }
-        }
-        if (idx == __globalUserDepositsAddr.length){
-            return;
-        }
-
+    function removeAddr(uint256 idx) internal{
         for (uint256 i=idx;i<__globalUserDepositsAddr.length-1;i++){
             __globalUserDepositsAddr[i] = __globalUserDepositsAddr[i+1];
         }
@@ -177,9 +163,29 @@ contract BFBSubMiningContract is owned{
         __globalUserDepositsAddr.length --;
     }
 
+
+//    function removeAddr(address user) internal {
+//        uint256 memory idx = __globalUserDepositsAddr.length;
+//
+//        for (uint256 i=0;i<__globalUserDepositsAddr.length; i++){
+//            if (user == __globalUserDepositsAddr[i]){
+//                idx = i;
+//            }
+//        }
+//        if (idx == __globalUserDepositsAddr.length){
+//            return;
+//        }
+//
+//        for (uint256 i=idx;i<__globalUserDepositsAddr.length-1;i++){
+//            __globalUserDepositsAddr[i] = __globalUserDepositsAddr[i+1];
+//        }
+//
+//        delete __globalUserDepositsAddr[__depositUserAddress.length-1];
+//        __globalUserDepositsAddr.length --;
+//    }
+
     //lp token, reward, offerReward
     function GetReward(address user) external view returns(uint256,uint256,uint256){
-
         return (__globalUserDeposits[user].TotalDepositAmount,__globalUserReward[user].Reward,__globalUserReward[user].OfferReward);
     }
 
