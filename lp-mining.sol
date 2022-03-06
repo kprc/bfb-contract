@@ -5,7 +5,7 @@ import "./owner.sol";
 import "./SafeMath.sol";
 import "./ITRC20.sol";
 
-contract BFBMiningContract is owned{
+contract LPMiningContract is owned{
     using SafeMath for uint256;
 
     uint private __onedaySeconds=86400;
@@ -94,6 +94,7 @@ contract BFBMiningContract is owned{
         _;
     }
 
+    function SetTotalReward(uint256 amount)
 
     function CalcSetReward(address[] memory users, uint256[] memory reward,uint256[] memory offerReward) external onlyOwner{
         require(block.timestamp > (__lastTime + (30*__onedaySeconds)));
