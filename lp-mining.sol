@@ -13,6 +13,8 @@ contract LPMiningContract is owned{
 
     ITRC20 public __RewardTokenContract;
     uint256 public __TotalReward = 4000000*(10**6);        //400w
+    uint256 public __TotalDepositDays = 720;
+
 
     ITRC20 public __LpTokenContract;
     uint256 public __TotalLPToken;
@@ -99,13 +101,17 @@ contract LPMiningContract is owned{
         __TotalReward = amount;
     }
 
-    function CalcSetReward(address[] memory users, uint256[] memory reward,uint256[] memory offerReward) external onlyOwner{
-        require(block.timestamp > (__lastTime + (30*__onedaySeconds)));
+    function SetTotalDepositDays(uint256 totalDays) external onlyOwner{
+        __TotalDepositDays = totalDays;
+    }
+
+    function CalcSetReward(address[] memory users, uint256[] memory reward,uint256[] memory offerReward, uint256 timestamp) external onlyOwner{
+        require(block.timestamp >= (__lastTime + __onedaySeconds),"time not permit");
 
         for (uint256 i=0;i<users.length;i++){
-            __globalUserReward[users[i]] = UserRewardItem(reward[i],offerReward[i],block.timestamp);
+            __globalUserReward[users[i]] = UserRewardItem(reward[i],offerReward[i],timestamp);
         }
-        __lastTime += 30*__onedaySeconds;
+        __lastTime = timestamp;
     }
 
 
