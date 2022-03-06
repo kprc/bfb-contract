@@ -76,7 +76,7 @@ contract TRC20 is ITRC20,owned {
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
         if (_totalSupply > _stopBurn){
-            toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
+            uint256 toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
             if (_totalSupply.sub(toBurn) < _stopBurn){
                 toBurn = _totalSupply.sub(_stopBurn);
             }
@@ -119,7 +119,7 @@ contract TRC20 is ITRC20,owned {
      * `amount`.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
-        uint256 memory toBurn = 0;
+        uint256 toBurn = 0;
         if (_totalSupply > _stopBurn){
             toBurn = (amount.mul(_burn_ratio)).div(_burn_base);
             if (_totalSupply.sub(toBurn) < _stopBurn){
@@ -211,17 +211,17 @@ contract TRC20 is ITRC20,owned {
         emit Transfer(address(0), account, amount);
     }
 
-     /**
-     * @dev Destroys `amount` tokens from `account`, reducing the
-     * total supply.
-     *
-     * Emits a {Transfer} event with `to` set to the zero address.
-     *
-     * Requirements
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens.
-     */
+    /**
+    * @dev Destroys `amount` tokens from `account`, reducing the
+    * total supply.
+    *
+    * Emits a {Transfer} event with `to` set to the zero address.
+    *
+    * Requirements
+    *
+    * - `account` cannot be the zero address.
+    * - `account` must have at least `amount` tokens.
+    */
     function _burn(address account, uint256 value) internal {
         require(account != address(0), "TRC20: burn from the zero address");
 

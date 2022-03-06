@@ -10,13 +10,13 @@ contract BFBSubMiningContract is owned{
 
     uint private __onedaySeconds=86400;
 
-    ITRC20 public __bfbToken;
-    uint256 public __Reward = 3600000*(10**6);        //400w
-    uint256 public __OfferReward =  400000*(10**6);        //40w
+    ITRC20 public __RewardToken;
+    uint256 public __Reward = 4000000*(10**6);        //400w
 
 
-    ITRC20 public __subLpToken;
-    uint256 public __totalBfbLPToken;
+
+    ITRC20 public __LpToken;
+    uint256 public __totalLPToken;
 
     uint public __lastTime;
     uint public __beginTime;
@@ -31,34 +31,33 @@ contract BFBSubMiningContract is owned{
         uint    TimeStamp;
     }
 
-    struct DepositList {
+    struct UserDepositItem {
         address Recommend;
         uint256 TotalAmount;
-        uint256 index;
         DepositInfo[] arrDeposit;
     }
 
-    mapping(address=>DepositList) public __depositUsers;
-    address[] public __depositUserAddress;
+    mapping(address=>UserDepositItem) public __userDepositList;
+    address[] public __userDepositAddress;
 
-    struct RewardInfo{
+    struct UserRewardItem{
         uint256 Reward;
         uint256 OfferReward;
         uint    TimeStamp;
     }
 
-    mapping(address=>RewardInfo) public __rewardInfos;
+    mapping(address=>UserRewardItem) public __userRewardList;
 
     event ev_deposit(address user,address referee, uint256 amount,uint timestamp);
     event ev_withdrawLp(address user,uint256 reward, uint256 offerReward);
 
-    constructor (address subLpToken, address bfbToken) public{
-        __xmfLpToken = ITRC20(subLpToken);
-        __bfbToken = ITRC20(bfbToken);
+    constructor (address lpToken, address rewardToken) public{
+        __LpToken = ITRC20(lpToken);
+        __RewardToken = ITRC20(rewardToken);
     }
 
     function getUserTotalDeposit(address user) external view returns (uint256){
-        return (__depositUsers[user].TotalAmount);
+        return (__userDepositList[user].TotalAmount);
     }
 
     function setStartTime(uint beginTime) external onlyOwner{
@@ -92,10 +91,10 @@ contract BFBSubMiningContract is owned{
         _;
     }
 
-    function getReward(address user) external view returns(uint256,uint256,uint){
-        RewardInfo memory d = __rewardInfos[user];
-        return (d.Reward,d.OfferReward,d.TimeStamp);
-    }
+//    function getReward(address user) external view returns(uint256,uint256,uint){
+//        UserRewardItem memory d = __userRewardList[user];
+//        return (d.Reward,d.OfferReward,d.TimeStamp);
+//    }
 
     function CalcSetReward(address[] memory users, uint256[] memory reward,uint256[] memory offerReward) external onlyOwner{
         require(block.timestamp > (____lastTime + (30*__onedaySeconds)));
@@ -107,7 +106,7 @@ contract BFBSubMiningContract is owned{
     }
 
 
-    function DepositSubLP(address referee, uint256 lpAmount) external startReward{
+    function DepositLP(address referee, uint256 lpAmount) external startReward{
         require(lpAmount>0,"lp amount must large than 0");
         require(__subLpToken.balanceOf(msg.sender)>=lpAmount," lp amount not enough");
 
@@ -130,7 +129,7 @@ contract BFBSubMiningContract is owned{
         emit ev_deposit(msg.sender, referee, lpAmount,block.timestamp);
     }
 
-    function WithdrawSubLP() external startWithdraw {
+    function WithdrawLP(uint256 addrIdx) external startWithdraw {
 
         uint256 memory amount = __rewardInfos[msg.sender].Reward + __rewardInfos[msg.sender].OfferReward;
 
@@ -174,11 +173,11 @@ contract BFBSubMiningContract is owned{
     }
 
     //lp token, reward, offerReward
-    function GetReward(address user) external view returns(uint256,uint256,uint256,uint256,uint256){
-        return (__depositUsers[user].TotalAmount,__rewardInfos[user].Reward,__rewardInfos[user].OfferReward,0,0);
+    function GetReward(address user) external view returns(uint256,uint256,uint256){
+        return (__depositUsers[user].TotalAmount,__rewardInfos[user].Reward,__rewardInfos[user].OfferReward);
     }
 
-    function WithDrawLeftBfb(address user) external onlyOwner{
+    function WithDrawLeftReward(address user) external onlyOwner{
         require(block.timestamp > __withdrawLeftTime, "only time after withdraw left time can do it");
 
         __bfbToken.balanceOf(address(this));
