@@ -94,7 +94,10 @@ contract LPMiningContract is owned{
         _;
     }
 
-    function SetTotalReward(uint256 amount)
+    function SetTotalReward(uint256 amount) external onlyOwner{
+        require(__startReward == false, "reward must not start");
+        __TotalReward = amount;
+    }
 
     function CalcSetReward(address[] memory users, uint256[] memory reward,uint256[] memory offerReward) external onlyOwner{
         require(block.timestamp > (__lastTime + (30*__onedaySeconds)));
