@@ -18,7 +18,7 @@ contract BFBSubMiningContract is owned{
 
     uint public __lastTime;
     uint public __beginTime;
-    uint public __expireTime;
+    uint public __expireTime;           //begin time + 720 days
     uint public __withdrawLeftTime;
     bool public __withdrawFlag;
     bool public __startReward;
@@ -92,9 +92,8 @@ contract BFBSubMiningContract is owned{
         for (uint256 i=0;i<users.length;i++){
             __globalUserReward[users[i]] = RewardInfo(reward[i],offerReward[i],block.timestamp);
         }
-
+        __lastTime += 30*__onedaySeconds;
     }
-
 
     function DepositLPToken(address referee, uint256 lpAmount) external startReward{
         require(lpAmount>0,"lp amount must large than 0");
@@ -165,8 +164,6 @@ contract BFBSubMiningContract is owned{
         delete __globalUserDepositsAddr[__depositUserAddress.length-1];
         __globalUserDepositsAddr.length --;
     }
-
-
 
     //lp token, reward, offerReward
     function GetReward(address user) external view returns(uint256,uint256,uint256){
